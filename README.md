@@ -1,0 +1,115 @@
+# Workflow Engine
+
+A lightweight Python workflow engine for building and executing data-processing
+pipelines.
+
+The project is currently a clean scaffold. The source code, tests, and example
+workflow implementations will be added incrementally according to the
+development plan below.
+
+## Planned Features
+
+- Extract, transform, and load components.
+- Dependency-aware directed acyclic graph (DAG) execution.
+- Batch processing with generators.
+- Parallel execution of independent tasks with `asyncio`.
+- Abstract base classes and reusable component interfaces.
+- Retry and latency-tracking decorators.
+- Context managers for resource handling.
+- Component registry and factory support.
+- Plugin-based extensibility.
+- Execution metrics and workflow monitoring.
+- Command-line interface for running workflows and viewing results.
+
+## Technology Stack
+
+- Python 3.14+
+- [uv](https://docs.astral.sh/uv/) for dependency and environment management.
+- `asyncio` for asynchronous execution.
+- `networkx` for dependency graphs.
+- `pytest` for testing.
+- `pandas`, `numpy`, and `polars` for data processing.
+
+## Project Structure
+
+```text
+.
+├── .gitignore                # Ignored local and generated files
+├── .python-version           # Project Python version
+├── examples/
+│   └── .gitkeep              # Placeholder for example workflows
+├── src/
+│   └── workflow_engine/
+│       ├── __init__.py       # Package entry point
+│       └── .gitkeep          # Placeholder for source modules
+├── tests/
+│   ├── test_structure.py     # Initial scaffold test
+│   └── .gitkeep              # Placeholder for future tests
+├── justfile                  # Common development commands
+├── pyproject.toml            # Project metadata and dependencies
+├── uv.lock                   # Locked dependency versions
+└── README.md                 # Project documentation
+```
+
+## Setup
+
+The project uses Python 3.14, selected through `.python-version`.
+
+```bash
+just install
+```
+
+The `just install` recipe runs `uv sync`, which creates or updates the virtual
+environment and installs the dependencies from `uv.lock`.
+
+To refresh the dependency lockfile manually:
+
+```bash
+just lock
+```
+
+The equivalent direct `uv` commands are `uv sync` and `uv lock`.
+
+## Development Commands
+
+The project uses [Just](https://just.systems/) as a command runner:
+
+```bash
+just install
+just lock
+just test
+just clean
+```
+
+The current test suite only verifies that the scaffold is ready for development.
+
+## Development Plan
+
+### 1. Base Architecture and Data Streaming
+
+Create `BaseExtractor`, `BaseTransformer`, and `BaseLoader` using abstract base
+classes. Add batch-oriented processing based on generators and `yield`.
+
+### 2. Utilities and Core Features
+
+Implement `@track_latency`, `@retry`, resource context managers, and a
+registry/factory system for dynamically creating components.
+
+### 3. Data Components
+
+Add reusable CSV and SQL extractors, data-cleaning and filtering transformers,
+and JSON or database loaders.
+
+### 4. Workflow Engine
+
+Implement the `WorkflowEngine` class with dependency handling, DAG validation,
+parallel execution through `asyncio`, and execution metrics.
+
+### 5. Testing and CLI Demo
+
+Add unit and integration tests with `pytest`, then create a CLI demo that runs
+workflows and displays logs, execution times, and pipeline status.
+
+## License
+
+This project is currently intended for educational and demonstration purposes.
