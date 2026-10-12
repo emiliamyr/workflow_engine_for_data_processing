@@ -78,10 +78,24 @@ The project uses [Just](https://just.systems/) as a command runner:
 just install
 just lock
 just test
+just example
 just clean
 ```
 
-The current test suite only verifies that the scaffold is ready for development.
+Run an example file with:
+
+```bash
+just example basic_tasks.py
+```
+
+The file path is required. The command is equivalent to:
+
+```bash
+uv run python examples/basic_tasks.py
+```
+
+The current example demonstrates the basic `@task` decorator. Full workflow
+execution and graph handling will be added in later stages.
 
 ## Development Plan
 
