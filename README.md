@@ -42,10 +42,12 @@ development plan below.
 │   └── workflow_engine/
 │       ├── __init__.py       # Package entry point
 │       ├── base.py           # Base extractor, transformer, and loader classes
+│       ├── components.py     # Simple in-memory pipeline components
 │       └── tasks.py          # Basic task decorator and metadata
 ├── tests/
 │   ├── test_structure.py     # Initial scaffold test
 │   ├── test_base.py          # Base component tests
+│   ├── test_components.py    # In-memory pipeline tests
 │   ├── test_tasks.py         # Task decorator tests
 │   └── .gitkeep              # Placeholder for future tests
 ├── justfile                  # Common development commands
@@ -97,8 +99,8 @@ The file path is required. The command is equivalent to:
 uv run python examples/basic_tasks.py
 ```
 
-The current example demonstrates the basic `@task` decorator. Full workflow
-execution and graph handling will be added in later stages.
+The `basic_pipeline.py` example demonstrates the current manual pipeline.
+Full workflow execution and graph handling will be added in later stages.
 
 ## Base Pipeline Components
 
@@ -116,6 +118,38 @@ BaseExtractor -> BaseTransformer -> BaseLoader
 
 The base classes define the expected interface. Concrete CSV, SQL, cleaning,
 and JSON components will implement these interfaces in later stages.
+
+The first concrete components are intentionally simple:
+
+- `InMemoryExtractor` reads records supplied as a Python iterable.
+- `SelectColumnsTransformer` keeps selected fields in each record.
+- `ListLoader` collects transformed records in a Python list.
+
+They demonstrate the first manual pipeline without a graph:
+
+```python
+from workflow_engine import (
+    InMemoryExtractor,
+    ListLoader,
+    SelectColumnsTransformer,
+)
+
+extractor = InMemoryExtractor(
+    [{"name": "Ada", "active": True}],
+)
+transformer = SelectColumnsTransformer(["name"])
+loader = ListLoader()
+
+batches = extractor.extract(batch_size=100)
+transformed = (transformer.transform(batch) for batch in batches)
+result = loader.load(transformed)
+```
+
+Run the example with:
+
+```bash
+just example basic_pipeline.py
+```
 
 ## Development Plan
 
