@@ -153,10 +153,14 @@ just example basic_pipeline.py
 
 ## Development Plan
 
-### 1. Base Architecture and Data Streaming
+### 1. Base Architecture and Data Streaming — Complete
 
 Create `BaseExtractor`, `BaseTransformer`, and `BaseLoader` using abstract base
 classes. Add batch-oriented processing based on generators and `yield`.
+
+The current implementation includes in-memory components and a tested manual
+pipeline. The next stage can focus on utilities such as decorators and context
+managers.
 
 ### 2. Utilities and Core Features
 
