@@ -41,9 +41,12 @@ development plan below.
 ├── src/
 │   └── workflow_engine/
 │       ├── __init__.py       # Package entry point
-│       └── .gitkeep          # Placeholder for source modules
+│       ├── base.py           # Base extractor, transformer, and loader classes
+│       └── tasks.py          # Basic task decorator and metadata
 ├── tests/
 │   ├── test_structure.py     # Initial scaffold test
+│   ├── test_base.py          # Base component tests
+│   ├── test_tasks.py         # Task decorator tests
 │   └── .gitkeep              # Placeholder for future tests
 ├── justfile                  # Common development commands
 ├── pyproject.toml            # Project metadata and dependencies
@@ -96,6 +99,23 @@ uv run python examples/basic_tasks.py
 
 The current example demonstrates the basic `@task` decorator. Full workflow
 execution and graph handling will be added in later stages.
+
+## Base Pipeline Components
+
+The first pipeline building blocks are abstract base classes:
+
+```text
+BaseExtractor -> BaseTransformer -> BaseLoader
+```
+
+## Simplest Analogy
+
+- `BaseExtractor` — where do we get the data from?
+- `BaseTransformer` — what do we change in the data?
+- `BaseLoader` — where do we save the data?
+
+The base classes define the expected interface. Concrete CSV, SQL, cleaning,
+and JSON components will implement these interfaces in later stages.
 
 ## Development Plan
 
