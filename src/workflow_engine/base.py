@@ -1,0 +1,35 @@
+"""Abstract interfaces for pipeline components."""
+
+from abc import ABC, abstractmethod
+from collections.abc import Iterable
+from typing import Any
+
+Record = dict[str, Any]
+Batch = list[Record]
+
+
+class BaseExtractor(ABC):
+    """Read records from a data source."""
+
+    @abstractmethod
+    def extract(self, batch_size: int = 100) -> Iterable[Batch]:
+        """Yield records in batches."""
+        raise NotImplementedError
+
+
+class BaseTransformer(ABC):
+    """Transform one batch of records."""
+
+    @abstractmethod
+    def transform(self, batch: Batch) -> Batch:
+        """Return the transformed batch."""
+        raise NotImplementedError
+
+
+class BaseLoader(ABC):
+    """Write batches of records to a destination."""
+
+    @abstractmethod
+    def load(self, batches: Iterable[Batch]) -> Any:
+        """Load batches and return an optional result."""
+        raise NotImplementedError
