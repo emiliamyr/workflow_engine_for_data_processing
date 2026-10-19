@@ -19,6 +19,9 @@ data = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
+    "pyright>=1.1",
+    "ruff>=0.3",
 ]
 
 [project.scripts]
@@ -35,3 +38,17 @@ packages = ["src/workflow_engine"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-q"
+cache_dir = ".artifacts/.pytest_cache"
+
+[tool.ruff]
+cache-dir = ".artifacts/.ruff_cache"
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pyright]
+include = ["src", "tests", "examples"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"

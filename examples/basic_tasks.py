@@ -20,6 +20,7 @@ def filter_active(users: list[dict[str, object]]) -> list[dict[str, object]]:
 
 if __name__ == "__main__":
     users = extract_users()
+    print(users)
     active_users = filter_active(users)
 
     print(active_users)

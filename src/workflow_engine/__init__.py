@@ -1,6 +1,6 @@
 """Workflow engine package."""
 
-from workflow_engine.base import BaseExtractor, BaseLoader, BaseTransformer
+from workflow_engine._base import BaseExtractor, BaseLoader, BaseTransformer
 from workflow_engine.components import (
     InMemoryExtractor,
     ListLoader,
