@@ -5,11 +5,7 @@ from __future__ import annotations
 import functools
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import ParamSpec, Protocol, TypeVar, cast, overload
-
-P = ParamSpec("P")
-R = TypeVar("R")
-R_co = TypeVar("R_co", covariant=True)
+from typing import Protocol, cast, overload
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,7 +21,7 @@ class TaskSpec:
     dependencies: tuple[str, ...]
 
 
-class TaskCallable(Protocol[P, R_co]):
+class TaskCallable[**P, R_co](Protocol):
     """Protocol for callables that have task metadata attached."""
 
     task_spec: TaskSpec
@@ -34,11 +30,11 @@ class TaskCallable(Protocol[P, R_co]):
 
 
 @overload
-def task(function: Callable[P, R], /) -> TaskCallable[P, R]: ...
+def task[**P, R](function: Callable[P, R], /) -> TaskCallable[P, R]: ...
 
 
 @overload
-def task(
+def task[**P, R](
     function: None = None,
     *,
     name: str | None = None,
@@ -46,7 +42,7 @@ def task(
 ) -> Callable[[Callable[P, R]], TaskCallable[P, R]]: ...
 
 
-def task(
+def task[**P, R](
     function: Callable[P, R] | None = None,
     *,
     name: str | None = None,

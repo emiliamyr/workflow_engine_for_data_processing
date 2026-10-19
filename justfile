@@ -32,4 +32,4 @@ example file:
 check: lint typecheck test
 
 clean:
-    Remove-Item -Recurse -Force .artifacts, output -ErrorAction SilentlyContinue
+    @powershell -Command "try { Remove-Item -Recurse -Force .artifacts, output -ErrorAction Stop } catch {}; exit 0"
