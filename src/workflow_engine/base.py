@@ -1,10 +1,9 @@
 """Abstract interfaces for pipeline components."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
-from typing import Any
+from collections.abc import Iterable, Mapping
 
-Record = dict[str, Any]
+Record = Mapping[str, object]
 Batch = list[Record]
 
 
@@ -30,6 +29,6 @@ class BaseLoader(ABC):
     """Write batches of records to a destination."""
 
     @abstractmethod
-    def load(self, batches: Iterable[Batch]) -> Any:
+    def load(self, batches: Iterable[Batch]) -> object:
         """Load batches and return an optional result."""
         raise NotImplementedError

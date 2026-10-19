@@ -1,9 +1,14 @@
 """Simple in-memory pipeline components for the first development stage."""
 
 from collections.abc import Iterable
-from typing import Any
 
-from workflow_engine.base import BaseExtractor, BaseLoader, BaseTransformer, Batch, Record
+from workflow_engine.base import (
+    BaseExtractor,
+    BaseLoader,
+    BaseTransformer,
+    Batch,
+    Record,
+)
 
 
 class InMemoryExtractor(BaseExtractor):

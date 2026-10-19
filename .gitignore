@@ -1,4 +1,7 @@
-# Python bytecode and caches
+# Custom project artifacts and caches (Ruff, Pyright, Pytest, Coverage)
+.artifacts/
+
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
