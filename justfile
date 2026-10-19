@@ -4,7 +4,7 @@ default:
     @just --list
 
 _prepare-artifacts:
-    @powershell -Command "if (!(Test-Path .artifacts)) { New-Item -ItemType Directory -Path .artifacts | Out-Null }"
+    @uv run python -c "from pathlib import Path; Path('.artifacts').mkdir(exist_ok=True)"
 
 install:
     uv sync --all-groups
