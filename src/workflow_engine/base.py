@@ -3,6 +3,11 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 
+DEFAULT_BATCH_SIZE = 100
+_MIN_BATCH_SIZE = 1
+_FIRST_RECORD_INDEX = 0
+
+
 Record = Mapping[str, object]
 Batch = list[Record]
 
@@ -11,7 +16,7 @@ class BaseExtractor(ABC):
     """Read records from a data source."""
 
     @abstractmethod
-    def extract(self, batch_size: int = 100) -> Iterable[Batch]:
+    def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
         """Yield records in batches."""
         raise NotImplementedError
 
