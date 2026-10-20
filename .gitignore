@@ -1,4 +1,7 @@
-# Python bytecode and caches
+# Custom project artifacts and caches (Ruff, Pyright, Pytest, Coverage)
+.artifacts/
+
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,6 +27,8 @@ htmlcov/
 # Tool and IDE files
 .idea/
 .vscode/
+!.vscode/
+!.vscode/settings.json
 *.code-workspace
 
 # Local environment and secrets

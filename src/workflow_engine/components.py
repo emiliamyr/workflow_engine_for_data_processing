@@ -1,9 +1,16 @@
 """Simple in-memory pipeline components for the first development stage."""
 
 from collections.abc import Iterable
-from typing import Any
 
-from workflow_engine.base import BaseExtractor, BaseLoader, BaseTransformer, Batch, Record
+from workflow_engine.base import (
+    _MIN_BATCH_SIZE,
+    DEFAULT_BATCH_SIZE,
+    BaseExtractor,
+    BaseLoader,
+    BaseTransformer,
+    Batch,
+    Record,
+)
 
 
 class InMemoryExtractor(BaseExtractor):
@@ -12,8 +19,8 @@ class InMemoryExtractor(BaseExtractor):
     def __init__(self, records: Iterable[Record]) -> None:
         self.records = list(records)
 
-    def extract(self, batch_size: int = 100) -> Iterable[Batch]:
-        if batch_size < 1:
+    def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
+        if batch_size < _MIN_BATCH_SIZE:
             raise ValueError("batch_size must be greater than zero")
 
         for index in range(0, len(self.records), batch_size):

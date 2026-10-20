@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import functools
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, overload
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -16,27 +17,54 @@ class TaskSpec:
     dependencies: tuple[str, ...]
 
 
-def task(
-    function: Any = None,
-    *,
-    name: str | None = None,
-    depends_on: tuple[str, ...] = (),
-) -> Any:
-    """Mark a function as a workflow task."""
+class Task[**P, R]:
+    """Wrapper attaching TaskSpec metadata to a function."""
 
-    def decorate(func: Any) -> Any:
-        spec = TaskSpec(
+    def __init__(
+        self,
+        func: Callable[P, R],
+        name: str | None = None,
+        depends_on: tuple[str, ...] = (),
+    ) -> None:
+        self.func = func
+        self.task_spec = TaskSpec(
             name=name or func.__name__,
             dependencies=depends_on,
         )
+        functools.update_wrapper(self, func)
 
-        @functools.wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            return func(*args, **kwargs)
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
+        return self.func(*args, **kwargs)
 
-        wrapper.task_spec = spec
-        return wrapper
+
+@overload
+def task[**P, R](function: Callable[P, R]) -> Task[P, R]: ...
+
+
+@overload
+def task[**P, R](
+    function: None = None,
+    *,
+    name: str | None = None,
+    depends_on: tuple[str, ...] = (),
+) -> Callable[[Callable[P, R]], Task[P, R]]: ...
+
+
+def task[**P, R](
+    function: Callable[P, R] | None = None,
+    *,
+    name: str | None = None,
+    depends_on: tuple[str, ...] = (),
+) -> Task[P, R] | Callable[[Callable[P, R]], Task[P, R]]:
+    """Decorator supporting both @task and @task(...) syntax."""
+
+    def decorate(func: Callable[P, R]) -> Task[P, R]:
+        return Task(func, name=name, depends_on=depends_on)
 
     if function is None:
         return decorate
-    return decorate(function)
+
+    if callable(function):
+        return decorate(function)
+
+    return decorate

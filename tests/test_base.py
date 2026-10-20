@@ -12,7 +12,7 @@ def test_base_components_are_abstract(base_class: type[object]) -> None:
 def test_base_component_methods_raise_not_implemented() -> None:
     class ExampleExtractor(BaseExtractor):
         def extract(self, batch_size: int = 100):
-            return super().extract(batch_size)
+            return super().extract(batch_size)  # pyright: ignore[reportAbstractUsage]
 
     with pytest.raises(NotImplementedError):
         ExampleExtractor().extract()

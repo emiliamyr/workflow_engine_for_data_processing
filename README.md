@@ -102,6 +102,16 @@ uv run python examples/basic_tasks.py
 The `basic_pipeline.py` example demonstrates the current manual pipeline.
 Full workflow execution and graph handling will be added in later stages.
 
+The CI checks can be run locally with:
+
+```bash
+just check
+```
+
+GitHub Actions runs this command for pushes to `master` and pull requests
+targeting `master`. Successful checks also trigger a SonarCloud scan when the
+`SONAR_TOKEN` repository secret is available.
+
 ## Base Pipeline Components
 
 The first pipeline building blocks are abstract base classes:

@@ -3,6 +3,12 @@
 from workflow_engine import task
 
 
+@task
+def say_hello(name: str) -> str:
+    """Return a greeting for the given name."""
+    return f"Hello, {name}!"
+
+
 @task(name="extract_users")
 def extract_users() -> list[dict[str, object]]:
     """Return source records."""
@@ -19,8 +25,14 @@ def filter_active(users: list[dict[str, object]]) -> list[dict[str, object]]:
 
 
 if __name__ == "__main__":
+    print(extract_users.task_spec)
+    print(filter_active.task_spec)
+    print(say_hello.task_spec)
+
     users = extract_users()
     active_users = filter_active(users)
+    greeting = say_hello("Ada")
 
+    print(users)
     print(active_users)
-    print(filter_active.task_spec)
+    print(greeting)

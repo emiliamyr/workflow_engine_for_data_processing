@@ -6,7 +6,6 @@ from workflow_engine import (
     SelectColumnsTransformer,
 )
 
-
 records = [
     {"name": "Ada", "role": "engineer", "active": True},
     {"name": "Grace", "role": "scientist", "active": True},

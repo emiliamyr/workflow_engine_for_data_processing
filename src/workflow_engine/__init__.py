@@ -1,6 +1,11 @@
 """Workflow engine package."""
 
-from workflow_engine.base import BaseExtractor, BaseLoader, BaseTransformer
+from workflow_engine.base import (
+    DEFAULT_BATCH_SIZE,
+    BaseExtractor,
+    BaseLoader,
+    BaseTransformer,
+)
 from workflow_engine.components import (
     InMemoryExtractor,
     ListLoader,
@@ -12,6 +17,7 @@ __all__ = [
     "BaseExtractor",
     "BaseLoader",
     "BaseTransformer",
+    "DEFAULT_BATCH_SIZE",
     "InMemoryExtractor",
     "ListLoader",
     "SelectColumnsTransformer",

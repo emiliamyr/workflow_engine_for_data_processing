@@ -1,10 +1,12 @@
 """Abstract interfaces for pipeline components."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
-from typing import Any
+from collections.abc import Iterable, MutableMapping
 
-Record = dict[str, Any]
+DEFAULT_BATCH_SIZE = 100
+_MIN_BATCH_SIZE = 1
+
+Record = MutableMapping[str, object]
 Batch = list[Record]
 
 
@@ -12,7 +14,7 @@ class BaseExtractor(ABC):
     """Read records from a data source."""
 
     @abstractmethod
-    def extract(self, batch_size: int = 100) -> Iterable[Batch]:
+    def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
         """Yield records in batches."""
         raise NotImplementedError
 
@@ -30,6 +32,6 @@ class BaseLoader(ABC):
     """Write batches of records to a destination."""
 
     @abstractmethod
-    def load(self, batches: Iterable[Batch]) -> Any:
+    def load(self, batches: Iterable[Batch]) -> object:
         """Load batches and return an optional result."""
         raise NotImplementedError

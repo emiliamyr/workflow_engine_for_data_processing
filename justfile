@@ -3,17 +3,33 @@ set windows-shell := ["powershell.exe", "-NoProfile", "-Command"]
 default:
     @just --list
 
+_prepare-artifacts:
+    @uv run python -c "from pathlib import Path; Path('.artifacts').mkdir(exist_ok=True)"
+
 install:
-    uv sync
+    uv sync --all-groups
 
 lock:
     uv lock
 
-test:
-    uv run pytest
+lint: _prepare-artifacts
+    uv run ruff check src tests examples
+    uv run ruff format --check src tests examples
+
+fix: _prepare-artifacts
+    uv run ruff format src tests examples
+    uv run ruff check --fix src tests examples
+
+typecheck: _prepare-artifacts
+    uv run pyright
+
+test: _prepare-artifacts
+    uv run pytest --cov=src/workflow_engine --cov-report=html:.artifacts/htmlcov --cov-report=xml:.artifacts/coverage.xml
 
 example file:
     uv run python examples/{{file}}
 
+check: lint typecheck test
+
 clean:
-    Remove-Item -Recurse -Force output -ErrorAction SilentlyContinue
+    @powershell -Command "try { Remove-Item -Recurse -Force .artifacts, output -ErrorAction Stop } catch {}; exit 0"
