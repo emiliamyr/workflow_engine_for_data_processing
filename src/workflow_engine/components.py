@@ -3,7 +3,6 @@
 from collections.abc import Iterable
 
 from workflow_engine.base import (
-    _FIRST_RECORD_INDEX,
     _MIN_BATCH_SIZE,
     DEFAULT_BATCH_SIZE,
     BaseExtractor,
@@ -24,7 +23,7 @@ class InMemoryExtractor(BaseExtractor):
         if batch_size < _MIN_BATCH_SIZE:
             raise ValueError("batch_size must be greater than zero")
 
-        for index in range(_FIRST_RECORD_INDEX, len(self.records), batch_size):
+        for index in range(0, len(self.records), batch_size):
             yield self.records[index : index + batch_size]
 
 

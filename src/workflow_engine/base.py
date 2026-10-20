@@ -5,8 +5,6 @@ from collections.abc import Iterable, Mapping
 
 DEFAULT_BATCH_SIZE = 100
 _MIN_BATCH_SIZE = 1
-_FIRST_RECORD_INDEX = 0
-
 
 Record = Mapping[str, object]
 Batch = list[Record]
