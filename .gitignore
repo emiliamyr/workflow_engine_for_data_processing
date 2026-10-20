@@ -27,6 +27,8 @@ htmlcov/
 # Tool and IDE files
 .idea/
 .vscode/
+!.vscode/
+!.vscode/settings.json
 *.code-workspace
 
 # Local environment and secrets
