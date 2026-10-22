@@ -1,5 +1,7 @@
 """Basic example of defining and using workflow tasks."""
 
+import pandas as pd
+
 from workflow_engine import task
 
 
@@ -10,18 +12,20 @@ def say_hello(name: str) -> str:
 
 
 @task(name="extract_users")
-def extract_users() -> list[dict[str, object]]:
-    """Return source records."""
-    return [
-        {"name": "Ada", "active": True},
-        {"name": "Grace", "active": False},
-    ]
+def extract_users() -> pd.DataFrame:
+    """Return source data."""
+    return pd.DataFrame(
+        {
+            "name": ["Ada", "Grace"],
+            "active": [True, False],
+        },
+    )
 
 
 @task(name="filter_active", depends_on=("extract_users",))
-def filter_active(users: list[dict[str, object]]) -> list[dict[str, object]]:
+def filter_active(users: pd.DataFrame) -> pd.DataFrame:
     """Keep only active users."""
-    return [user for user in users if user["active"]]
+    return users.loc[users["active"]].copy()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from workflow_engine.components import (
@@ -9,17 +10,19 @@ from workflow_engine.components import (
 
 def test_in_memory_extractor_yields_batches() -> None:
     extractor = InMemoryExtractor(
-        [{"id": 1}, {"id": 2}, {"id": 3}],
+        pd.DataFrame({"id": [1, 2, 3]}),
     )
 
-    assert list(extractor.extract(batch_size=2)) == [
-        [{"id": 1}, {"id": 2}],
-        [{"id": 3}],
-    ]
+    batches = list(extractor.extract(batch_size=2))
+    pd.testing.assert_frame_equal(batches[0], pd.DataFrame({"id": [1, 2]}))
+    pd.testing.assert_frame_equal(
+        batches[1],
+        pd.DataFrame({"id": [3]}, index=[2]),
+    )
 
 
 def test_in_memory_extractor_rejects_invalid_batch_size() -> None:
-    extractor = InMemoryExtractor([])
+    extractor = InMemoryExtractor(pd.DataFrame())
 
     with pytest.raises(ValueError, match="greater than zero"):
         list(extractor.extract(batch_size=0))
@@ -28,60 +31,62 @@ def test_in_memory_extractor_rejects_invalid_batch_size() -> None:
 
 
 def test_empty_in_memory_extractor_yields_no_batches() -> None:
-    assert list(InMemoryExtractor([]).extract()) == []
+    assert list(InMemoryExtractor(pd.DataFrame()).extract()) == []
 
 
 def test_batch_size_larger_than_data_yields_one_batch() -> None:
-    extractor = InMemoryExtractor([{"id": 1}])
+    extractor = InMemoryExtractor(pd.DataFrame({"id": [1]}))
 
-    assert list(extractor.extract(batch_size=100)) == [[{"id": 1}]]
+    batches = list(extractor.extract(batch_size=100))
+    pd.testing.assert_frame_equal(batches[0], pd.DataFrame({"id": [1]}))
 
 
 def test_select_columns_transformer_keeps_only_selected_columns() -> None:
     transformer = SelectColumnsTransformer(["name"])
 
-    assert transformer.transform(
-        [
-            {"name": "Ada", "age": 36},
-            {"name": "Grace", "age": 28},
-        ],
-    ) == [
-        {"name": "Ada"},
-        {"name": "Grace"},
-    ]
+    result = transformer.transform(
+        pd.DataFrame(
+            {
+                "name": ["Ada", "Grace"],
+                "age": [36, 28],
+            },
+        ),
+    )
+    pd.testing.assert_frame_equal(result, pd.DataFrame({"name": ["Ada", "Grace"]}))
 
 
 def test_select_columns_transformer_ignores_missing_columns() -> None:
     transformer = SelectColumnsTransformer(["name", "email"])
 
-    assert transformer.transform([{"name": "Ada"}]) == [{"name": "Ada"}]
+    result = transformer.transform(pd.DataFrame({"name": ["Ada"]}))
+    pd.testing.assert_frame_equal(result, pd.DataFrame({"name": ["Ada"]}))
 
 
 def test_list_loader_flattens_batches() -> None:
     loader = ListLoader()
 
-    assert loader.load(
+    result = loader.load(
         [
-            [{"id": 1}, {"id": 2}],
-            [{"id": 3}],
+            pd.DataFrame({"id": [1, 2]}),
+            pd.DataFrame({"id": [3]}),
         ],
-    ) == [
-        {"id": 1},
-        {"id": 2},
-        {"id": 3},
-    ]
+    )
+    pd.testing.assert_frame_equal(result, pd.DataFrame({"id": [1, 2, 3]}))
 
 
 def test_list_loader_handles_empty_batches() -> None:
-    assert ListLoader().load([]) == []
+    result = ListLoader().load([])
+    pd.testing.assert_frame_equal(result, pd.DataFrame())
 
 
 def test_pipeline_processes_data_in_batches() -> None:
     extractor = InMemoryExtractor(
-        [
-            {"name": "Ada", "active": True},
-            {"name": "Grace", "active": False},
-        ],
+        pd.DataFrame(
+            {
+                "name": ["Ada", "Grace"],
+                "active": [True, False],
+            },
+        ),
     )
     transformer = SelectColumnsTransformer(["name"])
     loader = ListLoader()
@@ -89,7 +94,5 @@ def test_pipeline_processes_data_in_batches() -> None:
     batches = extractor.extract(batch_size=1)
     transformed_batches = (transformer.transform(batch) for batch in batches)
 
-    assert loader.load(transformed_batches) == [
-        {"name": "Ada"},
-        {"name": "Grace"},
-    ]
+    result = loader.load(transformed_batches)
+    pd.testing.assert_frame_equal(result, pd.DataFrame({"name": ["Ada", "Grace"]}))

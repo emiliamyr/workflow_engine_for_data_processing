@@ -1,13 +1,14 @@
 """Abstract interfaces for pipeline components."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, MutableMapping
+from abc import ABC, abstractmethod
+from collections.abc import Iterable
+import pandas as pd
 
 DEFAULT_BATCH_SIZE = 100
 _MIN_BATCH_SIZE = 1
 
-Record = MutableMapping[str, object]
-Batch = list[Record]
+Batch = pd.DataFrame
 
 
 class BaseExtractor(ABC):

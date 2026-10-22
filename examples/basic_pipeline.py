@@ -1,18 +1,22 @@
 """Run a manual Extractor -> Transformer -> Loader pipeline."""
 
+import pandas as pd
+
 from workflow_engine import (
     InMemoryExtractor,
     ListLoader,
     SelectColumnsTransformer,
 )
 
-records = [
-    {"name": "Ada", "role": "engineer", "active": True},
-    {"name": "Grace", "role": "scientist", "active": True},
-    {"name": "Alan", "role": "mathematician", "active": False},
-]
+data = pd.DataFrame(
+    {
+        "name": ["Ada", "Grace", "Alan"],
+        "role": ["engineer", "scientist", "mathematician"],
+        "active": [True, True, False],
+    },
+)
 
-extractor = InMemoryExtractor(records)
+extractor = InMemoryExtractor(data)
 transformer = SelectColumnsTransformer(["name", "role"])
 loader = ListLoader()
 
@@ -31,5 +35,4 @@ def transform_batches():
 result = loader.load(transform_batches())
 
 print("\nLoaded records:")
-for record in result:
-    print(f"  {record}")
+print(result)

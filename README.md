@@ -131,13 +131,15 @@ and JSON components will implement these interfaces in later stages.
 
 The first concrete components are intentionally simple:
 
-- `InMemoryExtractor` reads records supplied as a Python iterable.
-- `SelectColumnsTransformer` keeps selected fields in each record.
-- `ListLoader` collects transformed records in a Python list.
+- `InMemoryExtractor` reads rows from a pandas `DataFrame`.
+- `SelectColumnsTransformer` keeps selected columns in each batch.
+- `ListLoader` collects transformed batches into a pandas `DataFrame`.
 
 They demonstrate the first manual pipeline without a graph:
 
 ```python
+import pandas as pd
+
 from workflow_engine import (
     InMemoryExtractor,
     ListLoader,
@@ -145,7 +147,7 @@ from workflow_engine import (
 )
 
 extractor = InMemoryExtractor(
-    [{"name": "Ada", "active": True}],
+    pd.DataFrame({"name": ["Ada"], "active": [True]}),
 )
 transformer = SelectColumnsTransformer(["name"])
 loader = ListLoader()

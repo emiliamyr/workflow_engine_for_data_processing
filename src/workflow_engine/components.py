@@ -1,6 +1,7 @@
 """Simple in-memory pipeline components for the first development stage."""
 
 from collections.abc import Iterable
+import pandas as pd
 
 from workflow_engine.base import (
     _MIN_BATCH_SIZE,
@@ -9,39 +10,39 @@ from workflow_engine.base import (
     BaseLoader,
     BaseTransformer,
     Batch,
-    Record,
 )
 
 
 class InMemoryExtractor(BaseExtractor):
-    """Yield records from memory in batches."""
+    """Yield rows from an in-memory DataFrame in batches."""
 
-    def __init__(self, records: Iterable[Record]) -> None:
-        self.records = list(records)
+    def __init__(self, data: pd.DataFrame) -> None:
+        self.data = data
 
     def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
         if batch_size < _MIN_BATCH_SIZE:
             raise ValueError("batch_size must be greater than zero")
 
-        for index in range(0, len(self.records), batch_size):
-            yield self.records[index : index + batch_size]
+        for index in range(0, len(self.data), batch_size):
+            yield self.data.iloc[index : index + batch_size].copy()
 
 
 class SelectColumnsTransformer(BaseTransformer):
-    """Keep only selected fields in each record."""
+    """Keep only selected columns in each batch."""
 
     def __init__(self, columns: Iterable[str]) -> None:
         self.columns = tuple(columns)
 
     def transform(self, batch: Batch) -> Batch:
-        return [
-            {column: record[column] for column in self.columns if column in record}
-            for record in batch
-        ]
+        columns = [column for column in self.columns if column in batch.columns]
+        return batch.loc[:, columns].copy()
 
 
 class ListLoader(BaseLoader):
-    """Collect all batches in a list kept in memory."""
+    """Collect all batches in a DataFrame kept in memory."""
 
-    def load(self, batches: Iterable[Batch]) -> list[Record]:
-        return [record for batch in batches for record in batch]
+    def load(self, batches: Iterable[Batch]) -> pd.DataFrame:
+        frames = list(batches)
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, ignore_index=True)

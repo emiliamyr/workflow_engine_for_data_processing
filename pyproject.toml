@@ -6,12 +6,12 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "networkx>=3.2",
+    "pandas>=2.1",
 ]
 
 [project.optional-dependencies]
 data = [
     "numpy>=1.26",
-    "pandas>=2.1",
     "polars>=0.20",
 ]
 
