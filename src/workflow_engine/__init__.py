@@ -11,7 +11,9 @@ from workflow_engine.components import (
     ListLoader,
     SelectColumnsTransformer,
 )
-from workflow_engine.tasks import TaskSpec, task
+from workflow_engine.decorators import retry, track_latency
+from workflow_engine.pipeline import Pipeline
+from workflow_engine.tasks import TaskSpec, job, task
 
 __all__ = [
     "BaseExtractor",
@@ -20,7 +22,11 @@ __all__ = [
     "DEFAULT_BATCH_SIZE",
     "InMemoryExtractor",
     "ListLoader",
+    "Pipeline",
     "SelectColumnsTransformer",
     "TaskSpec",
+    "job",
+    "retry",
     "task",
+    "track_latency",
 ]

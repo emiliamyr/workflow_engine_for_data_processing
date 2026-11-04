@@ -3,9 +3,8 @@
 A lightweight Python workflow engine for building and executing data-processing
 pipelines.
 
-The project is currently a clean scaffold. The source code, tests, and example
-workflow implementations will be added incrementally according to the
-development plan below.
+The project currently provides tested base pipeline components, task metadata,
+retry and latency utilities, and a dependency-aware pipeline.
 
 ## Planned Features
 
@@ -15,9 +14,6 @@ development plan below.
 - Parallel execution of independent tasks with `asyncio`.
 - Abstract base classes and reusable component interfaces.
 - Retry and latency-tracking decorators.
-- Context managers for resource handling.
-- Component registry and factory support.
-- Plugin-based extensibility.
 - Execution metrics and workflow monitoring.
 - Command-line interface for running workflows and viewing results.
 
@@ -37,19 +33,24 @@ development plan below.
 ├── .gitignore                # Ignored local and generated files
 ├── .python-version           # Project Python version
 ├── examples/
-│   └── .gitkeep              # Placeholder for example workflows
+│   ├── basic_pipeline.py    # Manual pipeline example
+│   ├── basic_tasks.py       # Task decorator example
+│   └── utilities.py         # Retry and latency decorators example
 ├── src/
 │   └── workflow_engine/
 │       ├── __init__.py       # Package entry point
 │       ├── base.py           # Base extractor, transformer, and loader classes
 │       ├── components.py     # Simple in-memory pipeline components
+│       ├── decorators.py     # Retry and latency decorators
+│       ├── pipeline.py       # Dependency-aware pipeline execution
 │       └── tasks.py          # Basic task decorator and metadata
 ├── tests/
-│   ├── test_structure.py     # Initial scaffold test
+│   ├── test_structure.py     # Project structure test
 │   ├── test_base.py          # Base component tests
 │   ├── test_components.py    # In-memory pipeline tests
-│   ├── test_tasks.py         # Task decorator tests
-│   └── .gitkeep              # Placeholder for future tests
+│   ├── test_decorators.py    # Retry and latency decorator tests
+│   ├── test_pipeline.py      # Pipeline graph and execution tests
+│   └── test_tasks.py         # Task decorator tests
 ├── justfile                  # Common development commands
 ├── pyproject.toml            # Project metadata and dependencies
 ├── uv.lock                   # Locked dependency versions
@@ -100,7 +101,7 @@ uv run python examples/basic_tasks.py
 ```
 
 The `basic_pipeline.py` example demonstrates the current manual pipeline.
-Full workflow execution and graph handling will be added in later stages.
+The `pipeline.py` example demonstrates dependency-aware job execution.
 
 The CI checks can be run locally with:
 
@@ -114,10 +115,12 @@ targeting `master`. Successful checks also trigger a SonarCloud scan when the
 
 ## Base Pipeline Components
 
-The first pipeline building blocks are abstract base classes:
+The first pipeline building blocks are independent abstract base classes:
 
 ```text
-BaseExtractor -> BaseTransformer -> BaseLoader
+BaseExtractor
+BaseTransformer
+BaseLoader
 ```
 
 ## Simplest Analogy
@@ -161,6 +164,55 @@ Run the example with:
 just example basic_pipeline.py
 ```
 
+## Utilities
+
+The package exports two reusable decorators:
+
+- `@track_latency` measures the last execution time in seconds.
+- `@retry` repeats a function for selected exceptions.
+
+Run the utilities example with:
+
+```bash
+just example utilities.py
+```
+
+## Dependency-Aware Pipelines
+
+Jobs are declared with `@job`, added to a `Pipeline`, and connected through
+their `depends_on` metadata. The pipeline builds a directed acyclic graph and
+executes jobs in topological order. A job receives the results of its
+dependencies as positional arguments.
+
+```python
+from workflow_engine import Pipeline, job
+
+
+@job
+def extract() -> list[int]:
+    return [1, 2, 3]
+
+
+@job(depends_on=("extract",))
+def total(values: list[int]) -> int:
+    return sum(values)
+
+
+pipeline = Pipeline()
+pipeline.add(total)
+pipeline.add(extract)
+results = pipeline.run()
+```
+
+`results` contains the result of every job by name. The pipeline rejects
+unknown dependencies, duplicate job names, and cyclic dependencies.
+
+Run the example with:
+
+```bash
+just example pipeline.py
+```
+
 ## Development Plan
 
 ### 1. Base Architecture and Data Streaming — Complete
@@ -169,13 +221,12 @@ Create `BaseExtractor`, `BaseTransformer`, and `BaseLoader` using abstract base
 classes. Add batch-oriented processing based on generators and `yield`.
 
 The current implementation includes in-memory components and a tested manual
-pipeline. The next stage can focus on utilities such as decorators and context
-managers.
+pipeline.
 
-### 2. Utilities and Core Features
+### 2. Dependency-Aware Pipeline
 
-Implement `@track_latency`, `@retry`, resource context managers, and a
-registry/factory system for dynamically creating components.
+Complete: add `@job`, `Pipeline.add()`, dependency graph construction, DAG
+validation, topological execution, and result passing between dependent jobs.
 
 ### 3. Data Components
 
@@ -184,8 +235,9 @@ and JSON or database loaders.
 
 ### 4. Workflow Engine
 
-Implement the `WorkflowEngine` class with dependency handling, DAG validation,
-parallel execution through `asyncio`, and execution metrics.
+The first synchronous dependency-aware `Pipeline` implementation is complete.
+Future work includes richer component integration, parallel execution through
+`asyncio`, and execution metrics.
 
 ### 5. Testing and CLI Demo
 
