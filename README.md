@@ -101,7 +101,7 @@ uv run python examples/basic_tasks.py
 ```
 
 The `basic_pipeline.py` example demonstrates the current manual pipeline.
-The `pipeline.py` example demonstrates dependency-aware job execution.
+The `pipeline.py` example demonstrates dependency-aware task execution.
 
 The CI checks can be run locally with:
 
@@ -179,21 +179,21 @@ just example utilities.py
 
 ## Dependency-Aware Pipelines
 
-Jobs are declared with `@job`, added to a `Pipeline`, and connected through
+Tasks are declared with `@task`, added to a `Pipeline`, and connected through
 their `depends_on` metadata. The pipeline builds a directed acyclic graph and
-executes jobs in topological order. A job receives the results of its
+executes tasks in topological order. A task receives the results of its
 dependencies as positional arguments.
 
 ```python
-from workflow_engine import Pipeline, job
+from workflow_engine import Pipeline, task
 
 
-@job
+@task
 def extract() -> list[int]:
     return [1, 2, 3]
 
 
-@job(depends_on=("extract",))
+@task(depends_on=("extract",))
 def total(values: list[int]) -> int:
     return sum(values)
 
@@ -225,7 +225,7 @@ pipeline.
 
 ### 2. Dependency-Aware Pipeline
 
-Complete: add `@job`, `Pipeline.add()`, dependency graph construction, DAG
+Complete: add `@task`, `Pipeline.add()`, dependency graph construction, DAG
 validation, topological execution, and result passing between dependent jobs.
 
 ### 3. Data Components

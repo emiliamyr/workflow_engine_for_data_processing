@@ -13,7 +13,7 @@ from workflow_engine.components import (
 )
 from workflow_engine.decorators import retry, track_latency
 from workflow_engine.pipeline import Pipeline
-from workflow_engine.tasks import TaskSpec, job, task
+from workflow_engine.tasks import TaskSpec, task
 
 __all__ = [
     "BaseExtractor",
@@ -25,7 +25,6 @@ __all__ = [
     "Pipeline",
     "SelectColumnsTransformer",
     "TaskSpec",
-    "job",
     "retry",
     "task",
     "track_latency",

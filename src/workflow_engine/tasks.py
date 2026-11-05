@@ -68,6 +68,3 @@ def task[**P, R](
         return decorate(function)
 
     return decorate
-
-
-job = task
