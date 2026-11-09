@@ -14,7 +14,14 @@ class BaseExtractor(ABC):
 
     @abstractmethod
     def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
-        """Yield records in batches."""
+        """Yield records in batches.
+
+        Args:
+            batch_size: Maximum number of records in each batch.
+
+        Returns:
+            An iterable of record batches.
+        """
         raise NotImplementedError
 
 
@@ -23,7 +30,14 @@ class BaseTransformer(ABC):
 
     @abstractmethod
     def transform(self, batch: Batch) -> Batch:
-        """Return the transformed batch."""
+        """Transform a batch of records.
+
+        Args:
+            batch: Records to transform.
+
+        Returns:
+            The transformed records.
+        """
         raise NotImplementedError
 
 
@@ -32,5 +46,12 @@ class BaseLoader(ABC):
 
     @abstractmethod
     def load(self, batches: Iterable[Batch]) -> object:
-        """Load batches and return an optional result."""
+        """Load batches into a destination.
+
+        Args:
+            batches: Record batches to load.
+
+        Returns:
+            A result produced by the destination.
+        """
         raise NotImplementedError
