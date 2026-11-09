@@ -43,6 +43,9 @@ cache_dir = ".artifacts/.pytest_cache"
 [tool.coverage.run]
 data_file = ".artifacts/.coverage"
 
+[tool.coverage.report]
+fail_under = 95
+
 [tool.ruff]
 cache-dir = ".artifacts/.ruff_cache"
 line-length = 88
