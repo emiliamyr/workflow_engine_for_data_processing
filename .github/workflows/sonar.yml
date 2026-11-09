@@ -27,18 +27,12 @@ jobs:
       - name: Install uv
         run: python -m pip install uv
 
-      - name: Run tests
-        id: tests
-        continue-on-error: true
+      - name: Generate coverage report
         run: |
           python -c "from pathlib import Path; Path('.artifacts').mkdir(exist_ok=True)"
           uv sync --all-groups
           uv run pytest --cov=src/workflow_engine --cov-report=
-
-      - name: Generate coverage report
-        if: always()
-        run: |
-          uv run coverage xml --fail-under=0 -o .artifacts/coverage.xml
+          uv run coverage xml -o .artifacts/coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@383f7e52eae3ab0510c3cb0e7d9d150bbaeab838 # v3.1.0
@@ -48,7 +42,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      - name: Enforce test coverage
-        if: steps.tests.outcome == 'failure'
-        run: exit 1
