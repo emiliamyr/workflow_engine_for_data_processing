@@ -45,6 +45,9 @@ data_file = ".artifacts/.coverage"
 source = ["src"]
 relative_files = true
 
+[tool.coverage.report]
+fail_under = 95
+
 [tool.ruff]
 cache-dir = ".artifacts/.ruff_cache"
 line-length = 88
