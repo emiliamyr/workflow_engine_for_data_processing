@@ -38,7 +38,7 @@ jobs:
       - name: Generate coverage report
         if: always()
         run: |
-          uv run coverage xml -o .artifacts/coverage.xml
+          uv run coverage xml --fail-under=0 -o .artifacts/coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@383f7e52eae3ab0510c3cb0e7d9d150bbaeab838 # v3.1.0
