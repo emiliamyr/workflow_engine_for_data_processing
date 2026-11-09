@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, MutableMapping
 
 DEFAULT_BATCH_SIZE = 100
-_MIN_BATCH_SIZE = 1
 
 Record = MutableMapping[str, object]
 Batch = list[Record]

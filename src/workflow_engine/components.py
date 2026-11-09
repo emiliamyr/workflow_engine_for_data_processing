@@ -3,7 +3,6 @@
 from collections.abc import Iterable
 
 from workflow_engine.base import (
-    _MIN_BATCH_SIZE,
     DEFAULT_BATCH_SIZE,
     BaseExtractor,
     BaseLoader,
@@ -20,7 +19,15 @@ class InMemoryExtractor(BaseExtractor):
         self.records = list(records)
 
     def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
-        if batch_size < _MIN_BATCH_SIZE:
+        """Yield stored records in batches.
+
+        Args:
+            batch_size: Maximum number of records in each batch.
+
+        Returns:
+            An iterable of record batches.
+        """
+        if batch_size < 1:
             raise ValueError("batch_size must be greater than zero")
 
         for index in range(0, len(self.records), batch_size):
