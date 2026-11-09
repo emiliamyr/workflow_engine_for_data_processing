@@ -15,12 +15,30 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Generate coverage report
+        run: |
+          python -c "from pathlib import Path; Path('.artifacts').mkdir(exist_ok=True)"
+          uv sync --all-groups
+          uv run pytest --cov=src/workflow_engine --cov-report=
+          uv run coverage xml -o .artifacts/coverage.xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: SonarSource/sonarcloud-github-action@383f7e52eae3ab0510c3cb0e7d9d150bbaeab838 # v3.1.0
+        with:
+          args: >
+            -Dproject.settings=.github/sonar-project.properties
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
