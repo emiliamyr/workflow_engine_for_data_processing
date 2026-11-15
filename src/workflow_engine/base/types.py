@@ -1,4 +1,8 @@
-"""Shared types for pipeline components."""
+"""Shared types for pipeline components.
+
+``Record`` is a mutable mapping of string keys to values. ``Batch`` groups
+records passed between pipeline stages.
+"""
 
 from collections.abc import MutableMapping
 

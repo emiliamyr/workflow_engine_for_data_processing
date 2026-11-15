@@ -10,5 +10,12 @@ class BaseTransformer(ABC):
 
     @abstractmethod
     def transform(self, batch: Batch) -> Batch:
-        """Return the transformed batch."""
+        """Transform and return a batch of records.
+
+        Args:
+            batch: Records to transform.
+
+        Returns:
+            The transformed records.
+        """
         raise NotImplementedError

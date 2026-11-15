@@ -11,5 +11,12 @@ class BaseExtractor(ABC):
 
     @abstractmethod
     def extract(self, batch_size: int = DEFAULT_BATCH_SIZE) -> Iterable[Batch]:
-        """Yield records in batches."""
+        """Yield records in batches.
+
+        Args:
+            batch_size: Maximum number of records in each batch.
+
+        Returns:
+            An iterable of record batches.
+        """
         raise NotImplementedError
