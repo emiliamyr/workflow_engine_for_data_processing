@@ -56,7 +56,11 @@ class SqliteLoader(BaseLoader):
         return inserted_count
 
     def _create_table(self, columns: list[str]) -> None:
-        """Create the destination table from the first batch."""
+        """Create the destination table from the first batch.
+
+        Args:
+            columns: Column names taken from the first record batch.
+        """
         quoted_table = f'"{self.table_name}"'
         definitions = ", ".join(f'"{column}"' for column in columns)
         self.connection.execute(
@@ -64,7 +68,12 @@ class SqliteLoader(BaseLoader):
         )
 
     def _insert_batch(self, batch: Batch, columns: list[str]) -> None:
-        """Insert one batch and commit it immediately."""
+        """Insert one batch and commit it immediately.
+
+        Args:
+            batch: Records to insert.
+            columns: Destination columns, in insertion order.
+        """
         quoted_table = f'"{self.table_name}"'
         quoted_columns = ", ".join(f'"{column}"' for column in columns)
         placeholders = ", ".join("?" for _ in columns)

@@ -81,6 +81,26 @@ def test_json_loader_writes_records(tmp_path: Path) -> None:
     ]
 
 
+def test_json_loader_preserves_target_if_serialization_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "records.json"
+    original_content = '[{"name": "existing"}]'
+    path.write_text(original_content, encoding="utf-8")
+
+    def fail_dump(*args: object, **kwargs: object) -> None:
+        raise TypeError("record cannot be serialized")
+
+    monkeypatch.setattr(json, "dump", fail_dump)
+
+    with pytest.raises(TypeError, match="cannot be serialized"):
+        JsonLoader(path).load([[{"name": "new"}]])
+
+    assert path.read_text(encoding="utf-8") == original_content
+    assert list(tmp_path.iterdir()) == [path]
+
+
 def test_sqlite_loader_creates_table_and_inserts_records() -> None:
     connection = sqlite3.connect(":memory:")
     try:

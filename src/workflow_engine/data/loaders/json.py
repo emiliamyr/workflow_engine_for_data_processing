@@ -3,6 +3,7 @@
 import json
 from collections.abc import Iterable
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from workflow_engine.base import BaseLoader, Batch
 
@@ -31,21 +32,39 @@ class JsonLoader(BaseLoader):
     def load(self, batches: Iterable[Batch]) -> Path:
         """Write records to the configured JSON file batch by batch.
 
+        The target file is replaced only after the complete JSON array has
+        been written.
+
         Args:
             batches: Record batches to write.
 
         Returns:
             The path of the written JSON file.
         """
-        with self.path.open("w", encoding=self.encoding) as file:
-            file.write("[")
-            first_record = True
-            for batch in batches:
-                for record in batch:
-                    if not first_record:
-                        file.write(",")
-                    json.dump(record, file, indent=self.indent)
-                    first_record = False
-                file.flush()
-            file.write("]")
+        temporary_path: Path | None = None
+        try:
+            with NamedTemporaryFile(
+                "w",
+                encoding=self.encoding,
+                dir=self.path.parent,
+                prefix=f".{self.path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as file:
+                temporary_path = Path(file.name)
+                file.write("[")
+                first_record = True
+                for batch in batches:
+                    for record in batch:
+                        if not first_record:
+                            file.write(",")
+                        json.dump(record, file, indent=self.indent)
+                        first_record = False
+                    file.flush()
+                file.write("]")
+            temporary_path.replace(self.path)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+
         return self.path

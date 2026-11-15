@@ -11,5 +11,12 @@ class BaseLoader(ABC):
 
     @abstractmethod
     def load(self, batches: Iterable[Batch]) -> object:
-        """Load batches and return an optional result."""
+        """Load batches and return the loader-specific result.
+
+        Args:
+            batches: Record batches to load.
+
+        Returns:
+            The result produced by this loader.
+        """
         raise NotImplementedError
