@@ -39,7 +39,8 @@ retry and latency utilities, and a dependency-aware pipeline.
 ├── src/
 │   └── workflow_engine/
 │       ├── __init__.py       # Package entry point
-│       ├── base.py           # Base extractor, transformer, and loader classes
+│       ├── base/             # Base extractor, transformer, and loader interfaces
+│       ├── data/             # CSV, SQL, cleaning, filtering, JSON, and SQLite components
 │       ├── components.py     # Simple in-memory pipeline components
 │       ├── decorators.py     # Retry and latency decorators
 │       ├── pipeline.py       # Dependency-aware pipeline execution
@@ -228,10 +229,11 @@ pipeline.
 Complete: add `@task`, `Pipeline.add()`, dependency graph construction, DAG
 validation, topological execution, and result passing between dependent jobs.
 
-### 3. Data Components
+### 3. Data Components — Complete
 
 Add reusable CSV and SQL extractors, data-cleaning and filtering transformers,
-and JSON or database loaders.
+and JSON or database loaders. These components are available from the
+`workflow_engine.data` package and the top-level package exports.
 
 ### 4. Workflow Engine
 
