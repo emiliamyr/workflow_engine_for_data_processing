@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from workflow_engine._utils import DEFAULT_ENCODING
 from workflow_engine.base import BaseLoader, Batch
 
 
@@ -16,7 +17,7 @@ class JsonLoader(BaseLoader):
         path: str | Path,
         *,
         indent: int | None = 2,
-        encoding: str = "utf-8",
+        encoding: str = DEFAULT_ENCODING,
     ) -> None:
         """Initialize a JSON loader.
 

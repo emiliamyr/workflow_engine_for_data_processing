@@ -4,6 +4,7 @@ import csv
 from collections.abc import Iterable
 from pathlib import Path
 
+from workflow_engine._utils import DEFAULT_ENCODING, validate_batch_size
 from workflow_engine.base import DEFAULT_BATCH_SIZE, BaseExtractor, Batch
 
 
@@ -14,7 +15,7 @@ class CsvExtractor(BaseExtractor):
         self,
         path: str | Path,
         *,
-        encoding: str = "utf-8",
+        encoding: str = DEFAULT_ENCODING,
     ) -> None:
         """Initialize a CSV extractor.
 
@@ -37,8 +38,7 @@ class CsvExtractor(BaseExtractor):
         Raises:
             ValueError: If ``batch_size`` is less than one.
         """
-        if batch_size < 1:
-            raise ValueError("batch_size must be greater than zero")
+        validate_batch_size(batch_size)
 
         with self.path.open(newline="", encoding=self.encoding) as file:
             reader = csv.DictReader(file)

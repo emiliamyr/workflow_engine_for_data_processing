@@ -44,15 +44,27 @@ def test_sql_extractor_reads_parameterized_rows() -> None:
         connection.close()
 
 
-def test_extractors_reject_invalid_batch_size() -> None:
+@pytest.mark.parametrize("batch_size", [0, -1])
+def test_extractors_reject_invalid_batch_size(batch_size: int) -> None:
     connection = sqlite3.connect(":memory:")
     with pytest.raises(ValueError, match="greater than zero"):
-        list(CsvExtractor("records.csv").extract(batch_size=0))
+        list(CsvExtractor("records.csv").extract(batch_size=batch_size))
     try:
         with pytest.raises(ValueError, match="greater than zero"):
-            list(SqlExtractor(connection, "SELECT 1").extract(batch_size=0))
+            list(SqlExtractor(connection, "SELECT 1").extract(batch_size=batch_size))
     finally:
         connection.close()
+
+
+def test_csv_and_json_support_custom_encoding(tmp_path: Path) -> None:
+    csv_path = tmp_path / "records.csv"
+    json_path = tmp_path / "records.json"
+    csv_path.write_text("name\nAda\n", encoding="utf-16")
+
+    batches = CsvExtractor(csv_path, encoding="utf-16").extract()
+    JsonLoader(json_path, encoding="utf-16").load(batches)
+
+    assert json.loads(json_path.read_text(encoding="utf-16")) == [{"name": "Ada"}]
 
 
 def test_clean_records_transformer_strips_and_drops_empty_values() -> None:

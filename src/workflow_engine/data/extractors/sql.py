@@ -3,6 +3,7 @@
 import sqlite3
 from collections.abc import Iterable, Sequence
 
+from workflow_engine._utils import validate_batch_size
 from workflow_engine.base import DEFAULT_BATCH_SIZE, BaseExtractor, Batch
 
 
@@ -38,8 +39,7 @@ class SqlExtractor(BaseExtractor):
         Raises:
             ValueError: If ``batch_size`` is less than one.
         """
-        if batch_size < 1:
-            raise ValueError("batch_size must be greater than zero")
+        validate_batch_size(batch_size)
 
         cursor = self.connection.execute(self.query, self.parameters)
         try:

@@ -10,9 +10,6 @@ from typing import ParamSpec, TypeVar
 P = ParamSpec("P")
 R = TypeVar("R")
 
-_FIRST_ATTEMPT = 1
-_NO_DELAY = 0.0
-
 
 class LatencyFunction[**P, R]:
     """Callable wrapper exposing the last execution latency."""
@@ -61,7 +58,7 @@ def track_latency[**P, R](
 def retry(
     *,
     max_attempts: int = 3,
-    delay: float = _NO_DELAY,
+    delay: float = 0.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Create a decorator that retries selected failures.
@@ -75,9 +72,9 @@ def retry(
         A decorator for retrying a callable.
     """
 
-    if max_attempts < _FIRST_ATTEMPT:
+    if max_attempts < 1:
         raise ValueError("max_attempts must be at least one")
-    if delay < _NO_DELAY:
+    if delay < 0.0:
         raise ValueError("delay must not be negative")
     if not exceptions:
         raise ValueError("exceptions must not be empty")
@@ -103,7 +100,7 @@ def retry(
             Returns:
                 The wrapped function's result.
             """
-            for attempt in range(_FIRST_ATTEMPT, max_attempts + _FIRST_ATTEMPT):
+            for attempt in range(1, max_attempts + 1):
                 try:
                     return function(*args, **kwargs)
                 except exceptions:
