@@ -41,6 +41,7 @@ example file:
 # Run linting, type checking, and tests
 check: lint typecheck test
 
-# Remove generated artifacts and output
+# Remove generated artifacts, output, and project Python caches
 clean:
     @powershell -Command "try { Remove-Item -Recurse -Force .artifacts, output -ErrorAction Stop } catch {}; exit 0"
+    @powershell -NoProfile -Command 'Get-ChildItem -LiteralPath src, tests, examples -Directory -Recurse -Filter __pycache__ | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop }'

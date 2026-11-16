@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from workflow_engine.base.types import Batch
+from workflow_engine.base._types import Batch
 
 
 class BaseTransformer(ABC):

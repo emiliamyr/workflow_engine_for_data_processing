@@ -5,13 +5,13 @@ from __future__ import annotations
 import functools
 import time
 from collections.abc import Callable
-from typing import ParamSpec, TypeVar
+from typing import Final, ParamSpec, TypeVar
 
 P = ParamSpec("P")
 R = TypeVar("R")
 
-_FIRST_ATTEMPT = 1
-_NO_DELAY = 0.0
+_FIRST_ATTEMPT: Final[int] = 1
+_NO_DELAY: Final[float] = 0.0
 
 
 class LatencyFunction[**P, R]:

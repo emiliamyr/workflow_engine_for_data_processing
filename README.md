@@ -40,8 +40,7 @@ retry and latency utilities, and a dependency-aware pipeline.
 │   └── workflow_engine/
 │       ├── __init__.py       # Package entry point
 │       ├── base/             # Base extractor, transformer, and loader interfaces
-│       ├── data/             # CSV, SQL, cleaning, filtering, JSON, and SQLite components
-│       ├── components.py     # Simple in-memory pipeline components
+│       ├── data/             # Extractors, transformers, and loaders
 │       ├── decorators.py     # Retry and latency decorators
 │       ├── pipeline.py       # Dependency-aware pipeline execution
 │       └── tasks.py          # Basic task decorator and metadata
@@ -118,6 +117,12 @@ targeting `master`. Successful checks also trigger a SonarCloud scan when the
 
 The first pipeline building blocks are independent abstract base classes:
 
+Import the interfaces from `workflow_engine.base`:
+
+```python
+from workflow_engine.base import BaseExtractor, BaseLoader, BaseTransformer
+```
+
 ```text
 BaseExtractor
 BaseTransformer
@@ -133,7 +138,8 @@ BaseLoader
 The base classes define the expected interface. Concrete CSV, SQL, cleaning,
 and JSON components will implement these interfaces in later stages.
 
-The first concrete components are intentionally simple:
+The first concrete components are intentionally simple and live under
+`workflow_engine.data`:
 
 - `InMemoryExtractor` reads records supplied as a Python iterable.
 - `SelectColumnsTransformer` keeps selected fields in each record.
@@ -234,6 +240,9 @@ validation, topological execution, and result passing between dependent jobs.
 Add reusable CSV and SQL extractors, data-cleaning and filtering transformers,
 and JSON or database loaders. These components are available from the
 `workflow_engine.data` package and the top-level package exports.
+
+The CSV extractor and JSON loader default to UTF-8; pass `encoding` to either
+component when a different encoding is needed.
 
 ### 4. Workflow Engine
 

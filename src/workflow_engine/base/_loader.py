@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
-from workflow_engine.base.types import Batch
+from workflow_engine.base._types import Batch
 
 
 class BaseLoader(ABC):

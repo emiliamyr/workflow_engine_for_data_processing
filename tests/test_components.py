@@ -1,10 +1,27 @@
 import pytest
 
-from workflow_engine.components import (
+from workflow_engine.data import (
     InMemoryExtractor,
     ListLoader,
     SelectColumnsTransformer,
 )
+
+
+def test_component_exports_match() -> None:
+    from workflow_engine import (
+        InMemoryExtractor as TopLevelExtractor,
+    )
+    from workflow_engine import ListLoader as TopLevelLoader
+    from workflow_engine import SelectColumnsTransformer as TopLevelTransformer
+    from workflow_engine.data.extractors import InMemoryExtractor as DataExtractor
+    from workflow_engine.data.loaders import ListLoader as DataLoader
+    from workflow_engine.data.transformers import (
+        SelectColumnsTransformer as DataTransformer,
+    )
+
+    assert InMemoryExtractor is TopLevelExtractor is DataExtractor
+    assert ListLoader is TopLevelLoader is DataLoader
+    assert SelectColumnsTransformer is TopLevelTransformer is DataTransformer
 
 
 def test_in_memory_extractor_yields_batches() -> None:
