@@ -35,12 +35,15 @@ retry and latency utilities, and a dependency-aware pipeline.
 ├── examples/
 │   ├── basic_pipeline.py    # Manual pipeline example
 │   ├── basic_tasks.py       # Task decorator example
+│   ├── cli_workflow.py      # CLI workflow example
 │   └── utilities.py         # Retry and latency decorators example
 ├── src/
 │   └── workflow_engine/
 │       ├── __init__.py       # Package entry point
+│       ├── __main__.py       # python -m workflow_engine entry point
 │       ├── base/             # Base extractor, transformer, and loader interfaces
 │       ├── data/             # Extractors, transformers, and loaders
+│       ├── cli.py            # Workflow runner and dependency-graph CLI
 │       ├── decorators.py     # Retry and latency decorators
 │       ├── pipeline.py       # Dependency-aware pipeline execution
 │       └── tasks.py          # Basic task decorator and metadata
@@ -50,6 +53,7 @@ retry and latency utilities, and a dependency-aware pipeline.
 │   ├── test_components.py    # In-memory pipeline tests
 │   ├── test_decorators.py    # Retry and latency decorator tests
 │   ├── test_pipeline.py      # Pipeline graph and execution tests
+│   ├── test_cli.py           # CLI workflow and graph tests
 │   └── test_tasks.py         # Task decorator tests
 ├── justfile                  # Common development commands
 ├── pyproject.toml            # Project metadata and dependencies
@@ -102,6 +106,19 @@ uv run python examples/basic_tasks.py
 
 The `basic_pipeline.py` example demonstrates the current manual pipeline.
 The `pipeline.py` example demonstrates dependency-aware task execution.
+
+Run the CLI example and display its dependency graph with:
+
+```bash
+uv run workflow-engine run examples/cli_workflow.py
+uv run workflow-engine graph examples/cli_workflow.py
+```
+
+A workflow file provides a `build_pipeline()` function returning a `Pipeline`.
+The `run` command prints the task graph, logs task execution, and reports
+pipeline and per-task status and duration. Independent tasks run concurrently;
+dependent tasks wait for their prerequisites. The `graph` command prints
+dependencies without running the workflow.
 
 The CI checks can be run locally with:
 
@@ -191,28 +208,55 @@ their `depends_on` metadata. The pipeline builds a directed acyclic graph and
 executes tasks in topological order. A task receives the results of its
 dependencies as positional arguments.
 
+`Pipeline.run()` executes synchronously and rejects async tasks. `await
+Pipeline.run_async()` runs independent async tasks concurrently while preserving
+dependency order. Synchronous task functions run inline on the event loop, so
+they should not perform blocking work. After either method finishes,
+`pipeline.last_report` contains the pipeline status and each task's status,
+duration, and error (if any). `pipeline.dependency_graph()` returns each task's
+direct prerequisites.
+
 ```python
+from collections.abc import Iterable, Iterator
+
 from workflow_engine import Pipeline, task
+from workflow_engine.base import Batch
 
 
-@task
-def extract() -> list[int]:
-    return [1, 2, 3]
+@task(batch=True)
+def extract() -> Iterator[Batch]:
+    for value in (1, 2, 3):
+        yield [{"value": value}]
 
 
-@task(depends_on=("extract",))
-def total(values: list[int]) -> int:
-    return sum(values)
+@task(batch=True, depends_on=("extract",))
+def transform(batch: Batch) -> Batch:
+    return [{"value": int(record["value"]) * 2} for record in batch]
+
+
+@task(depends_on=("transform",))
+def load(batches: Iterable[Batch]) -> list[int]:
+    return [int(batch[0]["value"]) for batch in batches]
 
 
 pipeline = Pipeline()
-pipeline.add(total)
+pipeline.add(load)
+pipeline.add(transform)
 pipeline.add(extract)
 results = pipeline.run()
 ```
 
 `results` contains the result of every job by name. The pipeline rejects
 unknown dependencies, duplicate job names, and cyclic dependencies.
+
+Batch tasks are explicit. A source declared with `@task(batch=True)` and no
+dependencies returns an iterable of `Batch` values. A dependent batch task takes
+one `Batch` and returns one `Batch`; the pipeline applies it lazily to each
+input batch. A regular downstream task can consume the resulting
+`Iterable[Batch]` as a sink. Batch streams must have one downstream consumer and
+must be fully consumed during the run, preventing implicit fan-out or
+materialization. Batch task functions are synchronous and can be used with
+either `run()` or `run_async()`.
 
 Run the example with:
 
@@ -246,14 +290,15 @@ component when a different encoding is needed.
 
 ### 4. Workflow Engine
 
-The first synchronous dependency-aware `Pipeline` implementation is complete.
-Future work includes richer component integration, parallel execution through
-`asyncio`, and execution metrics.
+Complete: integrate the existing extract-transform-load components into task
+workflows, expose the dependency graph, run independent tasks concurrently
+through `asyncio`, and report per-task and pipeline execution metrics.
 
 ### 5. Testing and CLI Demo
 
-Add unit and integration tests with `pytest`, then create a CLI demo that runs
-workflows and displays logs, execution times, and pipeline status.
+Complete: test graph execution, concurrency, failures, metrics, and CLI behavior
+with `pytest`. The CLI runs Python workflow modules and displays the dependency
+graph, task logs, execution times, and pipeline status.
 
 ## License
 

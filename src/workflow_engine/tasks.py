@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import ParamSpec, TypeVar, overload
@@ -17,6 +18,7 @@ class TaskSpec:
 
     name: str
     dependencies: tuple[str, ...]
+    batch: bool = False
 
 
 class Task[**P, R]:
@@ -27,6 +29,7 @@ class Task[**P, R]:
         func: Callable[P, R],
         name: str | None = None,
         depends_on: tuple[str, ...] = (),
+        batch: bool = False,
     ) -> None:
         """Initialize a task wrapper.
 
@@ -34,11 +37,20 @@ class Task[**P, R]:
             func: Function executed by the task.
             name: Optional task name.
             depends_on: Names of prerequisite tasks.
+            batch: Whether the task emits or transforms a stream of batches.
         """
+        if batch and len(depends_on) > 1:
+            raise ValueError("batch tasks can have at most one dependency")
+        if batch and (
+            inspect.iscoroutinefunction(func) or inspect.isasyncgenfunction(func)
+        ):
+            raise TypeError("batch tasks must be synchronous")
+
         self.func = func
         self.task_spec = TaskSpec(
             name=name or func.__name__,
             dependencies=depends_on,
+            batch=batch,
         )
         functools.update_wrapper(self, func)
 
@@ -74,6 +86,7 @@ def task[**P, R](
     *,
     name: str | None = None,
     depends_on: tuple[str, ...] = (),
+    batch: bool = False,
 ) -> Callable[[Callable[P, R]], Task[P, R]]:
     """Decorate a function as a task.
 
@@ -93,6 +106,7 @@ def task[**P, R](
     *,
     name: str | None = None,
     depends_on: tuple[str, ...] = (),
+    batch: bool = False,
 ) -> Task[P, R] | Callable[[Callable[P, R]], Task[P, R]]:
     """Decorate a function as a task.
 
@@ -100,6 +114,7 @@ def task[**P, R](
         function: Function to wrap, when using ``@task``.
         name: Optional task name.
         depends_on: Names of prerequisite tasks.
+        batch: Whether the task emits or transforms a stream of batches.
 
     Returns:
         A task wrapper or a decorator returning one.
@@ -114,7 +129,7 @@ def task[**P, R](
         Returns:
             The configured task wrapper.
         """
-        return Task(func, name=name, depends_on=depends_on)
+        return Task(func, name=name, depends_on=depends_on, batch=batch)
 
     if function is None:
         return decorate

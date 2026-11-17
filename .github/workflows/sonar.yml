@@ -6,10 +6,11 @@ on:
       - main
       - master
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   sonarcloud:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: SonarCloud Scan
     runs-on: ubuntu-latest
 
