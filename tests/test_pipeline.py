@@ -1,9 +1,11 @@
 import asyncio
 import threading
+from collections.abc import Iterable, Iterator
 
 import pytest
 
 from workflow_engine import Pipeline, task
+from workflow_engine.base import Batch
 
 
 def test_pipeline_runs_jobs_in_dependency_order() -> None:
@@ -24,6 +26,144 @@ def test_pipeline_runs_jobs_in_dependency_order() -> None:
         "extract": [1, 2, 3],
         "total": 6,
     }
+
+
+def test_pipeline_maps_batch_tasks_lazily() -> None:
+    pipeline = Pipeline()
+    processed: list[tuple[str, int]] = []
+
+    @task(batch=True)
+    def extract() -> Iterator[Batch]:
+        for value in (1, 2):
+            processed.append(("extract", value))
+            yield [{"value": value}]
+
+    @task(batch=True, depends_on=("extract",))
+    def increment(batch: Batch) -> Batch:
+        value = batch[0]["value"]
+        assert isinstance(value, int)
+        processed.append(("increment", value))
+        return [{"value": value + 1}]
+
+    @task(depends_on=("increment",))
+    def collect(batches: Iterable[Batch]) -> list[int]:
+        values = []
+        for batch in batches:
+            value = batch[0]["value"]
+            assert isinstance(value, int)
+            values.append(value)
+        return values
+
+    pipeline.add(collect)
+    pipeline.add(increment)
+    pipeline.add(extract)
+
+    results = pipeline.run()
+
+    assert results["collect"] == [2, 3]
+    assert processed == [
+        ("extract", 1),
+        ("increment", 1),
+        ("extract", 2),
+        ("increment", 2),
+    ]
+    assert set(pipeline.batch_jobs()) == {"extract", "increment"}
+    assert pipeline.last_report is not None
+    assert all(report.status == "succeeded" for report in pipeline.last_report.tasks)
+
+
+def test_pipeline_rejects_batch_stream_fan_out() -> None:
+    pipeline = Pipeline()
+
+    @task(batch=True)
+    def extract() -> Iterator[Batch]:
+        yield [{"value": 1}]
+
+    @task(depends_on=("extract",))
+    def first_sink(batches: Iterable[Batch]) -> int:
+        return sum(len(batch) for batch in batches)
+
+    @task(depends_on=("extract",))
+    def second_sink(batches: Iterable[Batch]) -> int:
+        return sum(len(batch) for batch in batches)
+
+    pipeline.add(extract)
+    pipeline.add(first_sink)
+    pipeline.add(second_sink)
+
+    with pytest.raises(ValueError, match="exactly one downstream consumer"):
+        pipeline.run()
+
+
+def test_batch_task_requires_a_batch_dependency() -> None:
+    pipeline = Pipeline()
+
+    @task
+    def extract() -> list[Batch]:
+        return [[{"value": 1}]]
+
+    @task(batch=True, depends_on=("extract",))
+    def transform(batch: Batch) -> Batch:
+        return batch
+
+    pipeline.add(extract)
+    pipeline.add(transform)
+
+    with pytest.raises(ValueError, match="must depend on a batch task"):
+        pipeline.run()
+
+
+def test_pipeline_rejects_unconsumed_batch_stream() -> None:
+    pipeline = Pipeline()
+
+    @task(batch=True)
+    def extract() -> Iterator[Batch]:
+        yield [{"value": 1}]
+
+    @task(depends_on=("extract",))
+    def ignore(_batches: Iterable[Batch]) -> str:
+        return "ignored"
+
+    pipeline.add(ignore)
+    pipeline.add(extract)
+
+    with pytest.raises(RuntimeError, match="not fully consumed"):
+        pipeline.run()
+
+
+@pytest.mark.asyncio
+async def test_run_async_supports_synchronous_batch_tasks() -> None:
+    pipeline = Pipeline()
+
+    @task(batch=True)
+    def extract() -> Iterator[Batch]:
+        yield [{"value": 2}]
+        yield [{"value": 3}]
+
+    @task(batch=True, depends_on=("extract",))
+    def double(batch: Batch) -> Batch:
+        value = batch[0]["value"]
+        assert isinstance(value, int)
+        return [{"value": value * 2}]
+
+    @task(depends_on=("double",))
+    async def collect(batches: Iterable[Batch]) -> int:
+        total = 0
+        for batch in batches:
+            value = batch[0]["value"]
+            assert isinstance(value, int)
+            total += value
+        return total
+
+    pipeline.add(collect)
+    pipeline.add(double)
+    pipeline.add(extract)
+
+    results = await pipeline.run_async()
+
+    assert results["collect"] == 10
+    assert pipeline.last_report is not None
+    assert all(report.status == "succeeded" for report in pipeline.last_report.tasks)
 
 
 def test_pipeline_passes_multiple_dependency_results_in_declaration_order() -> None:

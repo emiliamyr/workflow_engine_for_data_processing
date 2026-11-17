@@ -217,27 +217,46 @@ duration, and error (if any). `pipeline.dependency_graph()` returns each task's
 direct prerequisites.
 
 ```python
+from collections.abc import Iterable, Iterator
+
 from workflow_engine import Pipeline, task
+from workflow_engine.base import Batch
 
 
-@task
-def extract() -> list[int]:
-    return [1, 2, 3]
+@task(batch=True)
+def extract() -> Iterator[Batch]:
+    for value in (1, 2, 3):
+        yield [{"value": value}]
 
 
-@task(depends_on=("extract",))
-def total(values: list[int]) -> int:
-    return sum(values)
+@task(batch=True, depends_on=("extract",))
+def transform(batch: Batch) -> Batch:
+    return [{"value": int(record["value"]) * 2} for record in batch]
+
+
+@task(depends_on=("transform",))
+def load(batches: Iterable[Batch]) -> list[int]:
+    return [int(batch[0]["value"]) for batch in batches]
 
 
 pipeline = Pipeline()
-pipeline.add(total)
+pipeline.add(load)
+pipeline.add(transform)
 pipeline.add(extract)
 results = pipeline.run()
 ```
 
 `results` contains the result of every job by name. The pipeline rejects
 unknown dependencies, duplicate job names, and cyclic dependencies.
+
+Batch tasks are explicit. A source declared with `@task(batch=True)` and no
+dependencies returns an iterable of `Batch` values. A dependent batch task takes
+one `Batch` and returns one `Batch`; the pipeline applies it lazily to each
+input batch. A regular downstream task can consume the resulting
+`Iterable[Batch]` as a sink. Batch streams must have one downstream consumer and
+must be fully consumed during the run, preventing implicit fan-out or
+materialization. Batch task functions are synchronous and can be used with
+either `run()` or `run_async()`.
 
 Run the example with:
 

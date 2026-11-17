@@ -6,6 +6,7 @@ import asyncio
 import inspect
 import logging
 import time
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from typing import Literal
 
@@ -75,6 +76,10 @@ class Pipeline:
             name: self._jobs[name].task_spec.dependencies for name in execution_order
         }
 
+    def batch_jobs(self) -> tuple[str, ...]:
+        """Return the names of tasks that produce or transform batch streams."""
+        return tuple(name for name, job in self._jobs.items() if job.task_spec.batch)
+
     def run(self) -> dict[str, object]:
         """Execute jobs sequentially in dependency order.
 
@@ -94,6 +99,14 @@ class Pipeline:
                     results[dependency] for dependency in job.task_spec.dependencies
                 ]
                 state = states[name]
+                if job.task_spec.batch:
+                    results[name] = self._batch_task_result(
+                        job,
+                        dependency_results,
+                        state,
+                    )
+                    continue
+
                 state.status = "running"
                 logger.info("Starting task %s", name)
                 task_started_at = time.perf_counter()
@@ -120,9 +133,11 @@ class Pipeline:
                     )
                 finally:
                     state.duration_seconds = time.perf_counter() - task_started_at
+            self._ensure_batch_streams_consumed(states)
             status = "succeeded"
             return results
         except Exception:
+            self._close_batch_streams(results)
             for state in states.values():
                 if state.status == "pending":
                     state.status = "skipped"
@@ -170,6 +185,11 @@ class Pipeline:
                 logger.warning("Skipping task %s because a dependency failed", name)
                 raise
 
+            if job.task_spec.batch:
+                result = self._batch_task_result(job, dependency_results, state)
+                results[name] = result
+                return result
+
             state.status = "running"
             logger.info("Starting task %s", name)
             task_started_at = time.perf_counter()
@@ -211,13 +231,18 @@ class Pipeline:
                         raise outcome
                 if isinstance(outcome, asyncio.CancelledError):
                     raise outcome
+            self._ensure_batch_streams_consumed(states)
             status = "succeeded"
             return results
         except asyncio.CancelledError:
+            self._close_batch_streams(results)
             for state in states.values():
                 if state.status in ("pending", "running"):
                     state.status = "skipped"
                     state.error = "Pipeline execution was cancelled."
+            raise
+        except Exception:
+            self._close_batch_streams(results)
             raise
         finally:
             self.last_report = self._make_report(
@@ -254,12 +279,143 @@ class Pipeline:
             ),
         )
 
+    def _batch_task_result(
+        self,
+        job: Task,
+        dependency_results: list[object],
+        state: _TaskState,
+    ) -> Iterator[object]:
+        name = job.task_spec.name
+        if dependency_results:
+            batches = self._map_batches(job, dependency_results[0])
+        else:
+            batches = self._source_batches(job)
+        return self._track_batch_stream(name, batches, state)
+
+    def _source_batches(self, job: Task) -> Iterator[object]:
+        name = job.task_spec.name
+        source = self._require_synchronous(job(), name)
+        yield from self._iter_batches(source, name)
+
+    def _map_batches(self, job: Task, batches: object) -> Iterator[object]:
+        name = job.task_spec.name
+        for batch in self._iter_batches(batches, name):
+            result = self._require_synchronous(job(batch), name)
+            if not isinstance(result, list):
+                raise TypeError(f"batch task '{name}' must return a batch")
+            yield result
+
+    @staticmethod
+    def _iter_batches(batches: object, name: str) -> Iterator[list[object]]:
+        if not isinstance(batches, Iterable) or isinstance(batches, (str, bytes)):
+            raise TypeError(f"batch task '{name}' requires an iterable of batches")
+        for batch in batches:
+            if not isinstance(batch, list):
+                raise TypeError(
+                    f"batch task '{name}' received a value that is not a batch"
+                )
+            yield batch
+
+    @staticmethod
+    def _require_synchronous(result: object, name: str) -> object:
+        if inspect.isawaitable(result):
+            if inspect.iscoroutine(result):
+                result.close()
+            raise TypeError(f"batch task '{name}' must return synchronously")
+        return result
+
+    @staticmethod
+    def _track_batch_stream(
+        name: str,
+        batches: Iterable[object],
+        state: _TaskState,
+    ) -> Iterator[object]:
+        def track() -> Iterator[object]:
+            state.status = "running"
+            logger.info("Starting task %s", name)
+            completed = False
+            active_seconds = 0.0
+            iterator = iter(batches)
+            try:
+                while True:
+                    step_started_at = time.perf_counter()
+                    try:
+                        batch = next(iterator)
+                    except StopIteration:
+                        active_seconds += time.perf_counter() - step_started_at
+                        break
+                    active_seconds += time.perf_counter() - step_started_at
+                    yield batch
+
+                completed = True
+                state.status = "succeeded"
+                logger.info("Finished task %s in %.3f seconds", name, active_seconds)
+            except Exception as error:
+                state.status = "failed"
+                state.error = f"{type(error).__name__}: {error}"
+                logger.exception("Task %s failed", name)
+                raise
+            finally:
+                state.duration_seconds = active_seconds
+                if not completed and state.status == "running":
+                    state.status = "failed"
+                    state.error = "Batch stream was not fully consumed."
+
+        return track()
+
+    def _ensure_batch_streams_consumed(
+        self,
+        states: dict[str, _TaskState],
+    ) -> None:
+        unconsumed = [
+            name
+            for name, job in self._jobs.items()
+            if job.task_spec.batch and states[name].status != "succeeded"
+        ]
+        if not unconsumed:
+            return
+
+        for name in unconsumed:
+            state = states[name]
+            if state.status in ("pending", "running"):
+                state.status = "failed"
+                state.error = "Batch stream was not fully consumed."
+        names = ", ".join(unconsumed)
+        raise RuntimeError(f"batch task streams were not fully consumed: {names}")
+
+    def _close_batch_streams(self, results: dict[str, object]) -> None:
+        for name, result in results.items():
+            if not self._jobs[name].task_spec.batch:
+                continue
+            close = getattr(result, "close", None)
+            if callable(close):
+                close()
+
     def _execution_order(self) -> list[str]:
         graph = self._build_graph()
         try:
-            return list(nx.topological_sort(graph))
+            execution_order = list(nx.topological_sort(graph))
         except nx.NetworkXUnfeasible:
             raise ValueError("pipeline dependencies must be acyclic") from None
+        for name in execution_order:
+            downstream_is_batch = any(
+                self._jobs[child].task_spec.batch for child in graph.successors(name)
+            )
+            job = self._jobs[name]
+            if job.task_spec.batch and job.task_spec.dependencies:
+                dependency = job.task_spec.dependencies[0]
+                if not self._jobs[dependency].task_spec.batch:
+                    raise ValueError(
+                        f"batch task '{name}' must depend on a batch task",
+                    )
+            if (job.task_spec.batch or downstream_is_batch) and graph.out_degree(
+                name
+            ) != 1:
+                raise ValueError(
+                    f"batch stream from job '{name}' must have exactly one "
+                    "downstream consumer",
+                )
+        return execution_order
 
     def _build_graph(self) -> nx.DiGraph[str]:
         """Build the dependency graph for registered jobs.
